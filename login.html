@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <title>SignIn</title>
+  </head>
+  <body>
+    <div class="container">
+      <div class="login">
+        <div class="box signin">
+          <h2>Already Have an Account ?</h2>
+          <button class="signinBtn" id="sign_in">Sign in</button>
+        </div>
+        <div class="box signup">
+          <h2>Don't Have an Account ?</h2>
+          <button class="signupBtn" id="sign_up">Sign up</button>
+        </div>
+      </div>
+      <div class="formBx">
+        <div class="form signinForm">
+          <form action="/" method="post">
+            <h3>Sign In</h3>
+            <input type="email" name="username_in" placeholder="Email id" />
+            <input type="password" name="password_in" placeholder="Password" />
+            <button type="submit">Login</button>
+            <a class="forgot" href="/verify">Fogot Password</a>
+          </form>
+        </div>
+
+        <div class="form signupForm">
+          <form action="/register" method="post" enctype="multipart/form-data">
+            <div id="dpContainer">
+              <img src="/asset/userphoto.png" id="photo" />
+              <input type="file" id="file" name="file" />
+              <label for="file" id="uploadBtn">Choose Photo</label>
+            </div>
+
+            <input type="text" name="username_reg" placeholder="Full Name" />
+            <input type="email" name="mail_reg" placeholder="Email Address" />
+            <input type="number" name="mobile_reg" placeholder="Mobile" />
+            <input type="password" name="password_reg" placeholder="Password" />
+            <input
+              type="password"
+              name="CnfrmPass"
+              placeholder="Confirm Password"
+            />
+            <button type="submit">Register</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script src="./js_file/index.js"></script>
+  </body>
+</html>

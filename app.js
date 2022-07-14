@@ -5,6 +5,10 @@ const bodyParser = require('body-parser')
 const path = require('path')
 const fs = require('fs')
 const multer = require('multer')
+const session = require('express-session');
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+const passportLocacalMongoose = require('passport-local-mongoose');
 const ejs = require('ejs')
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
@@ -16,6 +20,15 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.static('public'))
 app.set('view-engine', 'ejs');
 
+app.use(session({
+    secret: process.env.SECRET,
+    resave: true,
+    saveUninitialized: true
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 mongoose.connect('mongodb://localhost:27017/userDB')
 
@@ -26,6 +39,9 @@ const userSchema = mongoose.Schema({
     pasword: String,
     image: String
 });
+
+userSchema.plugin(passportLocacalMongoose);
+
 
 const Storage = multer.diskStorage({
     destination: "./public/uploads",
@@ -41,33 +57,47 @@ const upload = multer({
 
 const User = mongoose.model('User', userSchema);
 
+// passport.use(User.createStrategy());
+passport.use(new LocalStrategy(
+    function (username, password, done) {
+        User.findOne({ username: username }, function (err, user) {
+            if (err) { return done(err); }
+            if (!user) { return done(null, false); }
+            if (!user.verifyPassword(password)) { return done(null, false); }
+            return done(null, user);
+        });
+    }
+));
+passport.serializeUser(function (user, done) {
+    done(null, user);
+});
+
+passport.deserializeUser(function (user, done) {
+    done(null, user);
+});
+
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/login.html')
 })
-// app.get('/home', (req, res) => {
-
-//     res.render('home.ejs');
-
-// })
+app.get('/home', (req, res) => {
+    console.log(req.isAuthenticated());
+    res.send('home');
+})
 
 app.post('/', (req, res) => {
-    const userName = req.body.username_in;
-    const userPass = req.body.password_in;
-    User.findOne({ username: userName }, (err, foundUser) => {
-        if (!err) {
-            bcrypt.compare(userPass, foundUser.pasword, (err, result) => {
-                if (result)
-                    res.render('home.ejs', { user: foundUser });
-                else
-                    res.send('No such user found!');
+    const user = new User({
+        username: req.body.username_in,
+        pasword: req.body.password_in
+    })
+    req.logIn(user, (err) => {
+        if (err)
+            console.log(err);
+        else {
+            passport.authenticate('local')(req, res, () => {
+                res.redirect('/home');
             })
         }
-        else {
-            console.log(err);
-            res.redirect('/');
-        }
     })
-
 })
 
 const validate = (pass, cnfPass) => {
@@ -82,23 +112,19 @@ app.post('/register', upload, (req, res) => {
     const userNum = req.body.mobile_reg;
     const userPass = req.body.password_reg;
     const cnfPass = req.body.CnfrmPass;
-    const img = req.file.filename;
+    // const img = req.file.filename;
     if (validate(userPass, cnfPass)) {
-        bcrypt.hash(userPass, saltRounds, (err, hash) => {
+        User.register({ fullname: userName, username: userID, usrNum: userNum }, userPass, (err, user) => {
             if (err)
                 console.log(err);
             else {
-                const newUser = new User({
-                    fullname: userName,
-                    username: userID,
-                    usrNum: userNum,
-                    pasword: hash,
-                    image: img
+                User.authenticate('local', { failureRedirect: '/verify', failureMessage: true })(req, res, () => {
+
+                    res.redirect('/');
                 })
-                newUser.save();
-                res.render('home.ejs', { user: newUser });
+                // .then(res.redirect('/home'));
             }
-        });
+        })
     }
     else {
         res.send("Incorrect details.please try again")
